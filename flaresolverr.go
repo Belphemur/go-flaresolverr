@@ -54,8 +54,10 @@ func NewClient(c Config) (*Client, error) {
 type command string
 
 const (
-	get  command = "request.get"
-	post command = "request.post"
+	get            command = "request.get"
+	post           command = "request.post"
+	sessionCreate  command = "sessions.create"
+	sessionDestroy command = "sessions.destroy"
 )
 
 type status string
@@ -70,6 +72,7 @@ type Response struct {
 	Status         status   `json:"status,omitempty"`
 	Message        string   `json:"message,omitempty"`
 	Solution       Solution `json:"solution"`
+	Session        string   `json:"session,omitempty"`
 	StartTimestamp int64    `json:"startTimestamp"`
 	EndTimestamp   int64    `json:"endTimestamp"`
 	Version        string   `json:"version"`
@@ -164,6 +167,40 @@ type GetParams struct {
 	MaxTimeout        int
 	Cookies           Cookies
 	ReturnOnlyCookies bool
+	Session           string
+}
+
+// SessionCreate creates a new session and returns session ID.
+func (c *Client) SessionCreate() (string, error) {
+	b, err := json.Marshal(requestParams{
+		Cmd: sessionCreate,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	response, err := c.requestURL(b)
+	if err != nil {
+		return "", err
+	}
+	return response.Session, err
+}
+
+// SessionCreate creates a new session and returns session ID.
+func (c *Client) SessionDestroy(session string) (string, error) {
+	b, err := json.Marshal(requestParams{
+		Cmd:     sessionCreate,
+		Session: session,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	response, err := c.requestURL(b)
+	if err != nil {
+		return "", err
+	}
+	return response.Session, err
 }
 
 // Get requests web page with method http.Get and returns Solution.Response as raw bytes.
@@ -197,6 +234,7 @@ func (c *Client) GetRaw(p GetParams) (Response, error) {
 		MaxTimeout:        timeout,
 		Cookies:           p.Cookies,
 		ReturnOnlyCookies: p.ReturnOnlyCookies,
+		Session:           p.Session,
 	})
 	if err != nil {
 		return Response{}, err
@@ -212,6 +250,7 @@ type PostParams struct {
 	MaxTimeout        int
 	Cookies           Cookies
 	ReturnOnlyCookies bool
+	Session           string
 }
 
 // Post requests web page with method http.Post and returns Solution.Response as raw bytes.
@@ -242,6 +281,7 @@ func (c *Client) PostRaw(p PostParams) (Response, error) {
 		MaxTimeout:        timeout,
 		Cookies:           p.Cookies,
 		ReturnOnlyCookies: p.ReturnOnlyCookies,
+		Session:           p.Session,
 	})
 	if err != nil {
 		return Response{}, err
@@ -252,7 +292,9 @@ func (c *Client) PostRaw(p PostParams) (Response, error) {
 
 type requestParams struct {
 	Cmd               command `json:"cmd"`
-	URL               string  `json:"url"`
+	URL               string  `json:"url,omitempty"`
+	Session           string  `json:"session,omitempty"`
+	SessionTtlMinutes string  `json:"session_ttl_minutes,omitempty"`
 	PostData          string  `json:"postData,omitempty"`
 	MaxTimeout        int     `json:"maxTimeout,omitempty"`
 	Cookies           Cookies `json:"cookies,omitempty"`
