@@ -186,21 +186,18 @@ func (c *Client) SessionCreate() (string, error) {
 	return response.Session, err
 }
 
-// SessionCreate creates a new session and returns session ID.
-func (c *Client) SessionDestroy(session string) (string, error) {
+// SessionDestroy destroys a session
+func (c *Client) SessionDestroy(session string) error {
 	b, err := json.Marshal(requestParams{
-		Cmd:     sessionCreate,
+		Cmd:     sessionDestroy,
 		Session: session,
 	})
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	response, err := c.requestURL(b)
-	if err != nil {
-		return "", err
-	}
-	return response.Session, err
+	_, err = c.requestURL(b)
+	return err
 }
 
 // Get requests web page with method http.Get and returns Solution.Response as raw bytes.
